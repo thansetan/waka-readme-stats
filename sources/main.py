@@ -8,8 +8,11 @@ from typing import Dict
 from urllib.parse import quote
 
 from graphics_chart_drawer import GRAPH_PATH, create_loc_graph
-from graphics_list_formatter import (make_commit_day_time_list, make_graph,
-                                     make_language_per_repo_list, make_list)
+from graphics_list_formatter import (
+    make_commit_day_time_list,
+    make_language_per_repo_list,
+    make_list,
+)
 from humanize import intcomma, intword, naturalsize
 from manager_debug import DebugManager as DBM
 from manager_debug import init_debug_manager
@@ -186,8 +189,7 @@ async def get_leetcode_stats(username) -> str:
         return stats
     stats += f"**😵‍💫 My Leetcode Data**\n\n"
     stats += f"> 👨‍💻 [{user['username']}](https://leetcode.com/{user['username']}) (#{user['profile']['ranking']})\n\n"
-    stats += "**🥴 Up Until Today, I've Solved**\n\n"
-    stats += f"```text\n"
+    stats += "**🥴 Up Until Today I've Solved**\n\n"
     total_questions = {
         question["difficulty"]: question["count"]
         for question in data["allQuestionsCount"]
@@ -198,11 +200,18 @@ async def get_leetcode_stats(username) -> str:
         for question in user["submitStatsGlobal"]["acSubmissionNum"]
         if question["difficulty"] != "All"
     }
-    for difficulty in total_questions.keys():
-        solved_len = len(str(solved_questions[difficulty]))
-        total_len = len(str(total_questions[difficulty]))
-        stats += f"{difficulty}{' ' * (40 - len(difficulty))}{make_graph((solved_questions[difficulty] / total_questions[difficulty]) * 100)}   {solved_questions[difficulty]}{' '*(4-solved_len)} / {total_questions[difficulty]}{' ' * (4 - total_len)} problems\n"
-    stats += "```\n"
+    lc_list = make_list(
+        [
+            {
+                "name": difficulty,
+                "text": f"{solved_questions[difficulty]}/{total_questions[difficulty]} problems",
+                "percent": (solved_questions[difficulty] / total_questions[difficulty])
+                * 100,
+            }
+            for difficulty in total_questions.keys()
+        ]
+    )
+    stats += f"```text\n{lc_list}\n```\n\n"
     DBM.i("LeetCode stats added!")
 
     return stats
