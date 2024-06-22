@@ -208,6 +208,9 @@ async def get_stats() -> str:
         data = f"{intword(total_loc)} {FM.t('Lines of code')}"
         stats += f"![Lines of code](https://img.shields.io/badge/{quote(FM.t('From Hello World I have written'))}-{quote(data)}-blue)\n\n"
 
+    if EM.SHOW_LEETCODE_STATS:
+        stats += await get_leetcode_stats(EM.SHOW_LEETCODE_STATS)
+    
     if EM.SHOW_SHORT_INFO:
         stats += await get_short_github_info()
 
@@ -221,8 +224,6 @@ async def get_stats() -> str:
         await create_loc_graph(yearly_data, GRAPH_PATH)
         stats += f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}"
 
-    if EM.SHOW_LEETCODE_STATS:
-        stats += await get_leetcode_stats(EM.SHOW_LEETCODE_STATS)
 
     if EM.SHOW_UPDATED_DATE:
         DBM.i("Adding last updated time...")
