@@ -1,12 +1,10 @@
-from enum import Enum
-from typing import Dict, Tuple, List
 from datetime import datetime
-
-from pytz import timezone, utc
+from enum import Enum
+from typing import Dict, List, Tuple
 
 from manager_environment import EnvironmentManager as EM
 from manager_file import FileManager as FM
-
+from pytz import timezone, utc
 
 DAY_TIME_EMOJI = ["🌞", "🌆", "🌃", "🌙"]  # Emojis, representing different times of day.
 DAY_TIME_NAMES = ["Morning", "Daytime", "Evening", "Night"]  # Localization identifiers for different times of day.
@@ -139,5 +137,5 @@ def make_language_per_repo_list(repositories: Dict) -> str:
     percents = [round(language_count[lang]["count"] / len(repos_with_language) * 100, 2) for lang in names]
 
     top_language = max(list(language_count.keys()), key=lambda x: language_count[x]["count"])
-    title = f"**{FM.t('I Mostly Code in') % top_language}** \n\n" if len(repos_with_language) > 0 else ""
+    title = f"**🧑‍💻 {FM.t('I Mostly Code in') % top_language}** \n\n" if len(repos_with_language) > 0 else ""
     return f"{title}```text\n{make_list(names=names, texts=texts, percents=percents)}\n```\n\n"

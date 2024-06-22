@@ -146,7 +146,7 @@ async def get_leetcode_stats(username) -> str:
     for difficulty in total_questions.keys():
         solved_len = len(str(solved_questions[difficulty]))
         total_len = len(str(total_questions[difficulty]))
-        stats += f"{difficulty}{' ' * (45 - len(difficulty))}{make_graph((solved_questions[difficulty] / total_questions[difficulty]) * 100)}   {solved_questions[difficulty]}{' '*(4-solved_len)} / {total_questions[difficulty]}{' ' * (4 - total_len)} problems\n"
+        stats += f"{difficulty}{' ' * (40 - len(difficulty))}{make_graph((solved_questions[difficulty] / total_questions[difficulty]) * 100)}   {solved_questions[difficulty]}{' '*(4-solved_len)} / {total_questions[difficulty]}{' ' * (4 - total_len)} problems\n"
     stats += "```\n"
     DBM.i("LeetCode stats added!")
 
