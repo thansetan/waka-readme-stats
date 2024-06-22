@@ -2,13 +2,12 @@ from asyncio import Task
 from hashlib import md5
 from json import dumps
 from string import Template
-from typing import Awaitable, Dict, Callable, Optional, List, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 from httpx import AsyncClient
-from yaml import safe_load
-
-from manager_environment import EnvironmentManager as EM
 from manager_debug import DebugManager as DBM
+from manager_environment import EnvironmentManager as EM
+from yaml import safe_load
 
 GITHUB_API_QUERIES = {
     # Query to collect info about all user repositories, including: is it a fork, name and owner login.
@@ -112,6 +111,27 @@ mutation {
 """,
 }
 
+LEETCODE_QUERY = """{
+  allQuestionsCount {
+    difficulty
+    count
+  }
+  matchedUser(username: "${username}") {
+    username
+    profile {
+      ranking
+    }
+    submitStatsGlobal {
+      acSubmissionNum {
+        difficulty
+        count
+      }
+    }
+  }
+}
+
+"""
+
 
 async def init_download_manager(user_login: str):
     """
@@ -166,7 +186,7 @@ class DownloadManager:
                 await resource
 
     @staticmethod
-    async def _get_remote_resource(resource: str, convertor: Optional[Callable[[bytes], Dict]]) -> Dict or None:
+    async def _get_remote_resource(resource: str, convertor: Optional[Callable[[bytes], Dict]]) -> Dict | None:
         """
         Receive execution result of static query, wait for it if necessary.
         If the query wasn't cached previously, cache it.
@@ -199,7 +219,7 @@ class DownloadManager:
             raise Exception(f"Query '{res.url}' failed to run by returning code of {res.status_code}: {res.json()}")
 
     @staticmethod
-    async def get_remote_json(resource: str) -> Dict or None:
+    async def get_remote_json(resource: str) -> Dict | None:
         """
         Shortcut for `_get_remote_resource` to return JSON response data.
         :param resource: Static query identifier.
@@ -208,7 +228,7 @@ class DownloadManager:
         return await DownloadManager._get_remote_resource(resource, None)
 
     @staticmethod
-    async def get_remote_yaml(resource: str) -> Dict or None:
+    async def get_remote_yaml(resource: str) -> Dict | None:
         """
         Shortcut for `_get_remote_resource` to return YAML response data.
         :param resource: Static query identifier.
@@ -301,3 +321,14 @@ class DownloadManager:
         else:
             res = DownloadManager._REMOTE_RESOURCES_CACHE[key]
         return res
+    
+    @staticmethod
+    async def get_leetcode_stats(username: str) -> Dict:
+        res = await DownloadManager._client.post("https://leetcode.com/graphql", json={
+            "query": Template(LEETCODE_QUERY).substitute(username=username),
+        })
+        match res.status_code:
+            case 200:
+                return res.json()["data"]
+            case _:
+                raise Exception(f"Query failed to run by returning code of {res.status_code}: {res.json()}")

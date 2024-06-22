@@ -1,4 +1,4 @@
-from os import getenv, environ
+from os import environ, getenv
 
 
 class EnvironmentManager:
@@ -48,3 +48,5 @@ class EnvironmentManager:
 
     DEBUG_LOGGING = getenv("INPUT_DEBUG_LOGGING", "0").lower() in _TRUTHY
     DEBUG_RUN = getenv("DEBUG_RUN", "False").lower() in _TRUTHY
+
+    SHOW_LEETCODE_STATS = getenv("INPUT_SHOW_LEETCODE_STATS", "")

@@ -6,16 +6,20 @@ from datetime import datetime
 from typing import Dict
 from urllib.parse import quote
 
-from humanize import intword, naturalsize, intcomma
-
-from manager_download import init_download_manager, DownloadManager as DM
+from graphics_chart_drawer import GRAPH_PATH, create_loc_graph
+from graphics_list_formatter import (make_commit_day_time_list, make_graph,
+                                     make_language_per_repo_list, make_list)
+from humanize import intcomma, intword, naturalsize
+from manager_debug import DebugManager as DBM
+from manager_debug import init_debug_manager
+from manager_download import DownloadManager as DM
+from manager_download import init_download_manager
 from manager_environment import EnvironmentManager as EM
-from manager_github import init_github_manager, GitHubManager as GHM
-from manager_file import init_localization_manager, FileManager as FM
-from manager_debug import init_debug_manager, DebugManager as DBM
-from graphics_chart_drawer import create_loc_graph, GRAPH_PATH
+from manager_file import FileManager as FM
+from manager_file import init_localization_manager
+from manager_github import GitHubManager as GHM
+from manager_github import init_github_manager
 from yearly_commit_calculator import calculate_commit_data
-from graphics_list_formatter import make_list, make_commit_day_time_list, make_language_per_repo_list
 
 
 async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
@@ -126,6 +130,27 @@ async def get_short_github_info() -> str:
     DBM.g("Short GitHub info added!")
     return stats
 
+async def get_leetcode_stats(username) -> str:
+    DBM.i("Adding LeetCode stats...")
+    stats = f"**😵‍💫 My Leetcode Data**\n\n"
+    data = await DM.get_leetcode_stats(username)
+    if data is None:
+        DBM.p("LeetCode data unavailable!")
+        return stats
+    user = data["matchedUser"]
+    stats += f"> 👨‍💻 [{user['username']}](https://leetcode.com/{user['username']}) (#{user['profile']['ranking']})\n\n"
+    stats += "**🥴 Up Until Today, I've Solved**\n\n"
+    stats += f'```text\n'
+    total_questions = {question["difficulty"]: question["count"] for question in data["allQuestionsCount"] if question["difficulty"] != "All"}
+    solved_questions = {question["difficulty"]: question["count"] for question in user["submitStatsGlobal"]["acSubmissionNum"] if question["difficulty"] != "All"}
+    for difficulty in total_questions.keys():
+        solved_len = len(str(solved_questions[difficulty]))
+        total_len = len(str(total_questions[difficulty]))
+        stats += f"{difficulty}{' ' * (45 - len(difficulty))}{make_graph((solved_questions[difficulty] / total_questions[difficulty]) * 100)}   {solved_questions[difficulty]}{' '*(4-solved_len)} / {total_questions[difficulty]}{' ' * (4 - total_len)} problems\n"
+    stats += "```\n"
+    DBM.i("LeetCode stats added!")
+
+    return stats
 
 async def collect_user_repositories() -> Dict:
     """
@@ -195,6 +220,9 @@ async def get_stats() -> str:
     if EM.SHOW_LOC_CHART:
         await create_loc_graph(yearly_data, GRAPH_PATH)
         stats += f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}"
+
+    if EM.SHOW_LEETCODE_STATS:
+        stats += await get_leetcode_stats(EM.SHOW_LEETCODE_STATS)
 
     if EM.SHOW_UPDATED_DATE:
         DBM.i("Adding last updated time...")
