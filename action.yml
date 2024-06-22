@@ -146,10 +146,16 @@ inputs:
     required: false
     description: "Whether to enable action debug logging"
     default: ${{ runner.debug }}
+
   SHOW_LEETCODE_STATS:
     required: false
     description: "Show Leetcode Stats (enter your leetcode username)"
     default: ""
+
+  WAKA_STATS_PERIOD:
+    required: false
+    description: "Wakatime stats period. valid options: '7d', '30d', '6m', '1y', 'all'"
+    default: "7d"
 
 runs:
   using: 'docker'

@@ -132,6 +132,14 @@ LEETCODE_QUERY = """{
 
 """
 
+WAKA_STATS_PERIODS = {
+    "7d": "last_7_days",
+    "30d": "last_30_days",
+    "6m": "last_6_months",
+    "1y": "last_year",
+    "all": "all_time",
+}
+
 
 async def init_download_manager(user_login: str):
     """
@@ -141,9 +149,14 @@ async def init_download_manager(user_login: str):
 
     :param user_login: GitHub user login.
     """
+    waka_stats_period = WAKA_STATS_PERIODS.get(EM.WAKA_STATS_PERIOD)
+    if waka_stats_period is None:
+        raise Exception(
+            f"Invalid WakaTime stats period: {EM.WAKA_STATS_PERIOD}. Supported periods: {', '.join(WAKA_STATS_PERIODS.keys())}"
+        )
     await DownloadManager.load_remote_resources(
         linguist="https://cdn.jsdelivr.net/gh/github/linguist@master/lib/linguist/languages.yml",
-        waka_latest=f"https://wakatime.com/api/v1/users/current/stats/last_7_days?api_key={EM.WAKATIME_API_KEY}",
+        waka_latest=f"https://wakatime.com/api/v1/users/current/stats/{waka_stats_period}?api_key={EM.WAKATIME_API_KEY}",
         waka_all=f"https://wakatime.com/api/v1/users/current/all_time_since_today?api_key={EM.WAKATIME_API_KEY}",
         github_stats=f"https://github-contributions.vercel.app/api/v1/{user_login}",
     )
@@ -171,7 +184,9 @@ class DownloadManager:
         :param resources: Static queries, formatted like "IDENTIFIER"="URL".
         """
         for resource, url in resources.items():
-            DownloadManager._REMOTE_RESOURCES_CACHE[resource] = DownloadManager._client.get(url)
+            DownloadManager._REMOTE_RESOURCES_CACHE[resource] = (
+                DownloadManager._client.get(url)
+            )
 
     @staticmethod
     async def close_remote_resources():
@@ -186,7 +201,9 @@ class DownloadManager:
                 await resource
 
     @staticmethod
-    async def _get_remote_resource(resource: str, convertor: Optional[Callable[[bytes], Dict]]) -> Dict | None:
+    async def _get_remote_resource(
+        resource: str, convertor: Optional[Callable[[bytes], Dict]]
+    ) -> Dict | None:
         """
         Receive execution result of static query, wait for it if necessary.
         If the query wasn't cached previously, cache it.
@@ -216,7 +233,9 @@ class DownloadManager:
             DBM.w(f"\tQuery '{resource}' returned 202 status code")
             return None
         else:
-            raise Exception(f"Query '{res.url}' failed to run by returning code of {res.status_code}: {res.json()}")
+            raise Exception(
+                f"Query '{res.url}' failed to run by returning code of {res.status_code}: {res.json()}"
+            )
 
     @staticmethod
     async def get_remote_json(resource: str) -> Dict | None:
@@ -237,7 +256,9 @@ class DownloadManager:
         return await DownloadManager._get_remote_resource(resource, safe_load)
 
     @staticmethod
-    async def _fetch_graphql_query(query: str, retries_count: int = 10, **kwargs) -> Dict:
+    async def _fetch_graphql_query(
+        query: str, retries_count: int = 10, **kwargs
+    ) -> Dict:
         """
         Execute GitHub GraphQL API simple query.
         :param query: Dynamic query identifier.
@@ -247,14 +268,20 @@ class DownloadManager:
         """
         headers = {"Authorization": f"Bearer {EM.GH_TOKEN}"}
         res = await DownloadManager._client.post(
-            "https://api.github.com/graphql", json={"query": Template(GITHUB_API_QUERIES[query]).substitute(kwargs)}, headers=headers
+            "https://api.github.com/graphql",
+            json={"query": Template(GITHUB_API_QUERIES[query]).substitute(kwargs)},
+            headers=headers,
         )
         if res.status_code == 200:
             return res.json()
         elif res.status_code == 502 and retries_count > 0:
-            return await DownloadManager._fetch_graphql_query(query, retries_count - 1, **kwargs)
+            return await DownloadManager._fetch_graphql_query(
+                query, retries_count - 1, **kwargs
+            )
         else:
-            raise Exception(f"Query '{query}' failed to run by returning code of {res.status_code}: {res.json()}")
+            raise Exception(
+                f"Query '{query}' failed to run by returning code of {res.status_code}: {res.json()}"
+            )
 
     @staticmethod
     def _find_pagination_and_data_list(response: Dict) -> Tuple[List, Dict]:
@@ -274,8 +301,12 @@ class DownloadManager:
         """
         if "nodes" in response.keys() and "pageInfo" in response.keys():
             return response["nodes"], response["pageInfo"]
-        elif len(response) == 1 and isinstance(response[list(response.keys())[0]], Dict):
-            return DownloadManager._find_pagination_and_data_list(response[list(response.keys())[0]])
+        elif len(response) == 1 and isinstance(
+            response[list(response.keys())[0]], Dict
+        ):
+            return DownloadManager._find_pagination_and_data_list(
+                response[list(response.keys())[0]]
+            )
         else:
             return list(), dict(hasNextPage=False)
 
@@ -290,12 +321,20 @@ class DownloadManager:
         :param kwargs: Parameters for substitution of variables in dynamic query.
         :return: Response JSON dictionary.
         """
-        initial_query_response = await DownloadManager._fetch_graphql_query(query, **kwargs, pagination="first: 100")
-        page_list, page_info = DownloadManager._find_pagination_and_data_list(initial_query_response)
+        initial_query_response = await DownloadManager._fetch_graphql_query(
+            query, **kwargs, pagination="first: 100"
+        )
+        page_list, page_info = DownloadManager._find_pagination_and_data_list(
+            initial_query_response
+        )
         while page_info["hasNextPage"]:
             pagination = f'first: 100, after: "{page_info["endCursor"]}"'
-            query_response = await DownloadManager._fetch_graphql_query(query, **kwargs, pagination=pagination)
-            new_page_list, page_info = DownloadManager._find_pagination_and_data_list(query_response)
+            query_response = await DownloadManager._fetch_graphql_query(
+                query, **kwargs, pagination=pagination
+            )
+            new_page_list, page_info = DownloadManager._find_pagination_and_data_list(
+                query_response
+            )
             page_list += new_page_list
         return page_list
 
@@ -321,14 +360,19 @@ class DownloadManager:
         else:
             res = DownloadManager._REMOTE_RESOURCES_CACHE[key]
         return res
-    
+
     @staticmethod
     async def get_leetcode_stats(username: str) -> Dict:
-        res = await DownloadManager._client.post("https://leetcode.com/graphql", json={
-            "query": Template(LEETCODE_QUERY).substitute(username=username),
-        })
+        res = await DownloadManager._client.post(
+            "https://leetcode.com/graphql",
+            json={
+                "query": Template(LEETCODE_QUERY).substitute(username=username),
+            },
+        )
         match res.status_code:
             case 200:
                 return res.json()["data"]
             case _:
-                raise Exception(f"Query failed to run by returning code of {res.status_code}: {res.json()}")
+                raise Exception(
+                    f"Query failed to run by returning code of {res.status_code}: {res.json()}"
+                )

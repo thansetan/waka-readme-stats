@@ -1,14 +1,19 @@
 """
 Readme Development Metrics With waka time progress
 """
+
 from asyncio import run
 from datetime import datetime
 from typing import Dict
 from urllib.parse import quote
 
 from graphics_chart_drawer import GRAPH_PATH, create_loc_graph
-from graphics_list_formatter import (make_commit_day_time_list, make_graph,
-                                     make_language_per_repo_list, make_list)
+from graphics_list_formatter import (
+    make_commit_day_time_list,
+    make_graph,
+    make_language_per_repo_list,
+    make_list,
+)
 from humanize import intcomma, intword, naturalsize
 from manager_debug import DebugManager as DBM
 from manager_debug import init_debug_manager
@@ -38,13 +43,28 @@ async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
     if data is None:
         DBM.p("WakaTime data unavailable!")
         return stats
-    if EM.SHOW_COMMIT or EM.SHOW_DAYS_OF_WEEK:  # if any on flag is turned on then we need to calculate the data and print accordingly
+    if (
+        EM.SHOW_COMMIT or EM.SHOW_DAYS_OF_WEEK
+    ):  # if any on flag is turned on then we need to calculate the data and print accordingly
         DBM.i("Adding user commit day time info...")
         stats += f"{await make_commit_day_time_list(data['data']['timezone'], repositories, commit_dates)}\n\n"
 
-    if EM.SHOW_TIMEZONE or EM.SHOW_LANGUAGE or EM.SHOW_EDITORS or EM.SHOW_PROJECTS or EM.SHOW_OS:
-        no_activity = FM.t("No Activity Tracked This Week")
-        stats += f"📊 **{FM.t('This Week I Spend My Time On')}** \n\n```text\n"
+    if (
+        EM.SHOW_TIMEZONE
+        or EM.SHOW_LANGUAGE
+        or EM.SHOW_EDITORS
+        or EM.SHOW_PROJECTS
+        or EM.SHOW_OS
+    ):
+        time_period = {
+            "last_7_days": "In the last 7 days",
+            "last_30_days": "In the last 30 days",
+            "last_6_months": "In the last 6 months",
+            "last_year": "In the last year",
+        }.get(data["data"]["range"], "")
+
+        no_activity = f"No Activity Tracked {time_period}"
+        stats += f"📊 **{f'{time_period} I Spend My Time On'}** \n\n```text\n"
 
         if EM.SHOW_TIMEZONE:
             DBM.i("Adding user timezone info...")
@@ -53,22 +73,38 @@ async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
 
         if EM.SHOW_LANGUAGE:
             DBM.i("Adding user top languages info...")
-            lang_list = no_activity if len(data["data"]["languages"]) == 0 else make_list(data["data"]["languages"])
+            lang_list = (
+                no_activity
+                if len(data["data"]["languages"]) == 0
+                else make_list(data["data"]["languages"])
+            )
             stats += f"💬 {FM.t('Languages')}: \n{lang_list}\n\n"
 
         if EM.SHOW_EDITORS:
             DBM.i("Adding user editors info...")
-            edit_list = no_activity if len(data["data"]["editors"]) == 0 else make_list(data["data"]["editors"])
+            edit_list = (
+                no_activity
+                if len(data["data"]["editors"]) == 0
+                else make_list(data["data"]["editors"])
+            )
             stats += f"🔥 {FM.t('Editors')}: \n{edit_list}\n\n"
 
         if EM.SHOW_PROJECTS:
             DBM.i("Adding user projects info...")
-            project_list = no_activity if len(data["data"]["projects"]) == 0 else make_list(data["data"]["projects"])
+            project_list = (
+                no_activity
+                if len(data["data"]["projects"]) == 0
+                else make_list(data["data"]["projects"])
+            )
             stats += f"🐱‍💻 {FM.t('Projects')}: \n{project_list}\n\n"
 
         if EM.SHOW_OS:
             DBM.i("Adding user operating systems info...")
-            os_list = no_activity if len(data["data"]["operating_systems"]) == 0 else make_list(data["data"]["operating_systems"])
+            os_list = (
+                no_activity
+                if len(data["data"]["operating_systems"]) == 0
+                else make_list(data["data"]["operating_systems"])
+            )
             stats += f"💻 {FM.t('operating system')}: \n{os_list}\n\n"
 
         stats = f"{stats[:-1]}```\n\n"
@@ -101,7 +137,10 @@ async def get_short_github_info() -> str:
         return stats
     DBM.i("Adding contributions info...")
     if len(data["years"]) > 0:
-        contributions = FM.t("Contributions in the year") % (intcomma(data["years"][0]["total"]), data["years"][0]["year"])
+        contributions = FM.t("Contributions in the year") % (
+            intcomma(data["years"][0]["total"]),
+            data["years"][0]["year"],
+        )
         stats += f"> 🏆 {contributions}\n > \n"
     else:
         DBM.p("GitHub contributions data unavailable!")
@@ -121,7 +160,9 @@ async def get_short_github_info() -> str:
         stats += f"> 📜 {FM.t('public repository') % public_repo} \n > \n"
 
     DBM.i("Adding private repositories info...")
-    private_repo = GHM.USER.owned_private_repos if GHM.USER.owned_private_repos is not None else 0
+    private_repo = (
+        GHM.USER.owned_private_repos if GHM.USER.owned_private_repos is not None else 0
+    )
     if public_repo != 1:
         stats += f"> 🔑 {FM.t('private repositories') % private_repo} \n > \n"
     else:
@@ -129,6 +170,7 @@ async def get_short_github_info() -> str:
 
     DBM.g("Short GitHub info added!")
     return stats
+
 
 async def get_leetcode_stats(username) -> str:
     DBM.i("Adding LeetCode stats...")
@@ -144,9 +186,17 @@ async def get_leetcode_stats(username) -> str:
     stats += f"**😵‍💫 My Leetcode Data**\n\n"
     stats += f"> 👨‍💻 [{user['username']}](https://leetcode.com/{user['username']}) (#{user['profile']['ranking']})\n\n"
     stats += "**🥴 Up Until Today, I've Solved**\n\n"
-    stats += f'```text\n'
-    total_questions = {question["difficulty"]: question["count"] for question in data["allQuestionsCount"] if question["difficulty"] != "All"}
-    solved_questions = {question["difficulty"]: question["count"] for question in user["submitStatsGlobal"]["acSubmissionNum"] if question["difficulty"] != "All"}
+    stats += f"```text\n"
+    total_questions = {
+        question["difficulty"]: question["count"]
+        for question in data["allQuestionsCount"]
+        if question["difficulty"] != "All"
+    }
+    solved_questions = {
+        question["difficulty"]: question["count"]
+        for question in user["submitStatsGlobal"]["acSubmissionNum"]
+        if question["difficulty"] != "All"
+    }
     for difficulty in total_questions.keys():
         solved_len = len(str(solved_questions[difficulty]))
         total_len = len(str(total_questions[difficulty]))
@@ -156,6 +206,7 @@ async def get_leetcode_stats(username) -> str:
 
     return stats
 
+
 async def collect_user_repositories() -> Dict:
     """
     Collects information about all the user repositories available.
@@ -163,13 +214,21 @@ async def collect_user_repositories() -> Dict:
     :returns: Complete list of user repositories.
     """
     DBM.i("Getting user repositories list...")
-    repositories = await DM.get_remote_graphql("user_repository_list", username=GHM.USER.login, id=GHM.USER.node_id)
+    repositories = await DM.get_remote_graphql(
+        "user_repository_list", username=GHM.USER.login, id=GHM.USER.node_id
+    )
     repo_names = [repo["name"] for repo in repositories]
     DBM.g("\tUser repository list collected!")
 
-    contributed = await DM.get_remote_graphql("repos_contributed_to", username=GHM.USER.login)
+    contributed = await DM.get_remote_graphql(
+        "repos_contributed_to", username=GHM.USER.login
+    )
 
-    contributed_nodes = [repo for repo in contributed if repo is not None and repo["name"] not in repo_names and not repo["isFork"]]
+    contributed_nodes = [
+        repo
+        for repo in contributed
+        if repo is not None and repo["name"] not in repo_names and not repo["isFork"]
+    ]
     DBM.g("\tUser contributed to repository list collected!")
 
     return repositories + contributed_nodes
@@ -187,7 +246,12 @@ async def get_stats() -> str:
     stats = str()
     repositories = await collect_user_repositories()
 
-    if EM.SHOW_LINES_OF_CODE or EM.SHOW_LOC_CHART or EM.SHOW_COMMIT or EM.SHOW_DAYS_OF_WEEK:  # calculate commit data if any one of these is enabled
+    if (
+        EM.SHOW_LINES_OF_CODE
+        or EM.SHOW_LOC_CHART
+        or EM.SHOW_COMMIT
+        or EM.SHOW_DAYS_OF_WEEK
+    ):  # calculate commit data if any one of these is enabled
         yearly_data, commit_data = await calculate_commit_data(repositories)
     else:
         yearly_data, commit_data = dict(), dict()
@@ -208,13 +272,20 @@ async def get_stats() -> str:
 
     if EM.SHOW_LINES_OF_CODE:
         DBM.i("Adding lines of code info...")
-        total_loc = sum([yearly_data[y][q][d]["add"] for y in yearly_data.keys() for q in yearly_data[y].keys() for d in yearly_data[y][q].keys()])
+        total_loc = sum(
+            [
+                yearly_data[y][q][d]["add"]
+                for y in yearly_data.keys()
+                for q in yearly_data[y].keys()
+                for d in yearly_data[y][q].keys()
+            ]
+        )
         data = f"{intword(total_loc)} {FM.t('Lines of code')}"
         stats += f"![Lines of code](https://img.shields.io/badge/{quote(FM.t('From Hello World I have written'))}-{quote(data)}-blue)\n\n"
 
     if EM.SHOW_LEETCODE_STATS:
         stats += await get_leetcode_stats(EM.SHOW_LEETCODE_STATS)
-    
+
     if EM.SHOW_SHORT_INFO:
         stats += await get_short_github_info()
 
@@ -226,12 +297,15 @@ async def get_stats() -> str:
 
     if EM.SHOW_LOC_CHART:
         await create_loc_graph(yearly_data, GRAPH_PATH)
-        stats += f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}"
-
+        stats += (
+            f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}"
+        )
 
     if EM.SHOW_UPDATED_DATE:
         DBM.i("Adding last updated time...")
-        stats += f"\n Last Updated on {datetime.now().strftime(EM.UPDATED_DATE_FORMAT)} UTC"
+        stats += (
+            f"\n Last Updated on {datetime.now().strftime(EM.UPDATED_DATE_FORMAT)} UTC"
+        )
 
     DBM.g("Stats for README collected!")
     return stats
