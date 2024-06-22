@@ -132,12 +132,16 @@ async def get_short_github_info() -> str:
 
 async def get_leetcode_stats(username) -> str:
     DBM.i("Adding LeetCode stats...")
-    stats = f"**😵‍💫 My Leetcode Data**\n\n"
+    stats = str()
     data = await DM.get_leetcode_stats(username)
     if data is None:
         DBM.p("LeetCode data unavailable!")
         return stats
     user = data["matchedUser"]
+    if user is None:
+        DBM.p("LeetCode user data unavailable!")
+        return stats
+    stats += f"**😵‍💫 My Leetcode Data**\n\n"
     stats += f"> 👨‍💻 [{user['username']}](https://leetcode.com/{user['username']}) (#{user['profile']['ranking']})\n\n"
     stats += "**🥴 Up Until Today, I've Solved**\n\n"
     stats += f'```text\n'
