@@ -8,12 +8,8 @@ from typing import Dict
 from urllib.parse import quote
 
 from graphics_chart_drawer import GRAPH_PATH, create_loc_graph
-from graphics_list_formatter import (
-    make_commit_day_time_list,
-    make_graph,
-    make_language_per_repo_list,
-    make_list,
-)
+from graphics_list_formatter import (make_commit_day_time_list, make_graph,
+                                     make_language_per_repo_list, make_list)
 from humanize import intcomma, intword, naturalsize
 from manager_debug import DebugManager as DBM
 from manager_debug import init_debug_manager
@@ -47,7 +43,7 @@ async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
         EM.SHOW_COMMIT or EM.SHOW_DAYS_OF_WEEK
     ):  # if any on flag is turned on then we need to calculate the data and print accordingly
         DBM.i("Adding user commit day time info...")
-        stats += f"{await make_commit_day_time_list(data['data']['timezone'], repositories, commit_dates)}\n\n"
+        stats += f"{await make_commit_day_time_list(data['data']['timezone'], repositories, commit_dates)}\n"
 
     if (
         EM.SHOW_TIMEZONE
@@ -56,15 +52,20 @@ async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
         or EM.SHOW_PROJECTS
         or EM.SHOW_OS
     ):
-        time_period = {
-            "last_7_days": "In the last 7 days",
-            "last_30_days": "In the last 30 days",
-            "last_6_months": "In the last 6 months",
-            "last_year": "In the last year",
-        }.get(data["data"]["range"], "")
+        time_period = (
+            {
+                "last_7_days": " In the last 7 days ",
+                "last_30_days": " In the last 30 days ",
+                "last_6_months": " In the last 6 months ",
+                "last_year": " In the last year ",
+            }
+            .get(data["data"]["range"], "")
+            .title()
+        )
 
-        no_activity = f"No Activity Tracked {time_period}"
-        stats += f"📊 **{f'{time_period} I Spend My Time On'}** \n\n```text\n"
+        no_activity = f"No Activity Tracked{time_period.rstrip()} 🤷‍♂️"
+        print(no_activity)
+        stats += f"📊 **{f'{time_period.lstrip()}I Spent My Time On'}** \n\n```text\n"
 
         if EM.SHOW_TIMEZONE:
             DBM.i("Adding user timezone info...")
@@ -288,6 +289,7 @@ async def get_stats() -> str:
 
     if EM.SHOW_SHORT_INFO:
         stats += await get_short_github_info()
+        stats += "\n"
 
     stats += await get_waka_time_stats(repositories, commit_data)
 
@@ -297,14 +299,12 @@ async def get_stats() -> str:
 
     if EM.SHOW_LOC_CHART:
         await create_loc_graph(yearly_data, GRAPH_PATH)
-        stats += (
-            f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}"
-        )
+        stats += f"**{FM.t('Timeline')}**\n\n{GHM.update_chart('Lines of Code', GRAPH_PATH)}\n\n"
 
     if EM.SHOW_UPDATED_DATE:
         DBM.i("Adding last updated time...")
         stats += (
-            f"\n Last Updated on {datetime.now().strftime(EM.UPDATED_DATE_FORMAT)} UTC"
+            f"Last Updated on {datetime.now().strftime(EM.UPDATED_DATE_FORMAT)} UTC"
         )
 
     DBM.g("Stats for README collected!")
