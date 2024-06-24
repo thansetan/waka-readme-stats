@@ -157,6 +157,11 @@ inputs:
     description: "Wakatime stats period. valid options: '7d', '30d', '6m', '1y', 'all'"
     default: "7d"
 
+  INCLUDE_PRIVATE:
+    required: false
+    description: "Include stats from private repository"
+    default: true
+
 runs:
   using: 'docker'
   image: 'Dockerfile'

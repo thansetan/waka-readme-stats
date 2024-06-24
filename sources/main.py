@@ -67,7 +67,6 @@ async def get_waka_time_stats(repositories: Dict, commit_dates: Dict) -> str:
         )
 
         no_activity = f"No Activity Tracked{time_period.rstrip()} 🤷‍♂️"
-        print(no_activity)
         stats += f"📊 **{f'{time_period.lstrip()}I Spent My Time On'}** \n\n```text\n"
 
         if EM.SHOW_TIMEZONE:
@@ -163,14 +162,17 @@ async def get_short_github_info() -> str:
     else:
         stats += f"> 📜 {FM.t('public repository') % public_repo} \n > \n"
 
-    DBM.i("Adding private repositories info...")
-    private_repo = (
-        GHM.USER.owned_private_repos if GHM.USER.owned_private_repos is not None else 0
-    )
-    if public_repo != 1:
-        stats += f"> 🔑 {FM.t('private repositories') % private_repo} \n > \n"
-    else:
-        stats += f"> 🔑 {FM.t('private repository') % private_repo} \n > \n"
+    if EM.INCLUDE_PRIVATE:
+        DBM.i("Adding private repositories info...")
+        private_repo = (
+            GHM.USER.owned_private_repos
+            if GHM.USER.owned_private_repos is not None
+            else 0
+        )
+        if public_repo != 1:
+            stats += f"> 🔑 {FM.t('private repositories') % private_repo} \n > \n"
+        else:
+            stats += f"> 🔑 {FM.t('private repository') % private_repo} \n > \n"
 
     DBM.g("Short GitHub info added!")
     return stats
@@ -225,21 +227,29 @@ async def collect_user_repositories() -> Dict:
     """
     DBM.i("Getting user repositories list...")
     repositories = await DM.get_remote_graphql(
-        "user_repository_list", username=GHM.USER.login, id=GHM.USER.node_id
+        "user_repository_list",
+        username=GHM.USER.login,
+        id=GHM.USER.node_id,
+        include_private="" if EM.INCLUDE_PRIVATE else "visibility: PUBLIC",
     )
-    repo_names = [repo["name"] for repo in repositories]
     DBM.g("\tUser repository list collected!")
 
     contributed = await DM.get_remote_graphql(
-        "repos_contributed_to", username=GHM.USER.login
+        "repos_contributed_to",
+        username=GHM.USER.login,
+        include_private="" if EM.INCLUDE_PRIVATE else "privacy: PUBLIC",
     )
 
     contributed_nodes = [
-        repo
-        for repo in contributed
-        if repo is not None and repo["name"] not in repo_names and not repo["isFork"]
+        repo for repo in contributed if repo["owner"]["login"] != GHM.USER.login
     ]
+
     DBM.g("\tUser contributed to repository list collected!")
+    repositories = [
+        repo
+        for repo in repositories
+        if repo["name"] not in [c["name"] for c in contributed_nodes]
+    ]
 
     return repositories + contributed_nodes
 

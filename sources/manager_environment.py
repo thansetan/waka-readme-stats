@@ -55,3 +55,4 @@ class EnvironmentManager:
 
     SHOW_LEETCODE_STATS = getenv("INPUT_SHOW_LEETCODE_STATS", "")
     WAKA_STATS_PERIOD = getenv("INPUT_WAKA_STATS_PERIOD", "7d")
+    INCLUDE_PRIVATE = getenv("INPUT_INCLUDE_PRIVATE", "True").lower() in _TRUTHY

@@ -15,7 +15,7 @@ GITHUB_API_QUERIES = {
     "repos_contributed_to": """
 {
     user(login: "$username") {
-        repositoriesContributedTo(orderBy: {field: CREATED_AT, direction: DESC}, $pagination, includeUserRepositories: true) {
+        repositoriesContributedTo(orderBy: {field: CREATED_AT, direction: DESC}, $pagination, includeUserRepositories: true, $include_private) {
             nodes {
                 primaryLanguage {
                     name
@@ -39,7 +39,7 @@ GITHUB_API_QUERIES = {
     "user_repository_list": """
 {
     user(login: "$username") {
-        repositories(orderBy: {field: CREATED_AT, direction: DESC}, $pagination, affiliations: [OWNER, COLLABORATOR], isFork: false) {
+        repositories(orderBy: {field: CREATED_AT, direction: DESC}, $pagination, affiliations: [OWNER, COLLABORATOR], isFork: false, $include_private) {
             nodes {
                 primaryLanguage {
                     name
