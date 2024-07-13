@@ -191,7 +191,7 @@ async def get_leetcode_stats(username) -> str:
         return stats
     stats += f"**😵‍💫 My Leetcode Data**\n\n"
     stats += f"> 👨‍💻 [{user['username']}](https://leetcode.com/{user['username']}) (#{user['profile']['ranking']})\n\n"
-    stats += "**🥴 Up Until Today I've Solved**\n\n"
+    stats += "**Up Until Today I've Solved 🥴**\n\n"
     total_questions = {
         question["difficulty"]: question["count"]
         for question in data["allQuestionsCount"]
